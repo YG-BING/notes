@@ -899,7 +899,211 @@
 
 
 
-## 六、Mybatis 常见问题
+## 六、Mybatis 拦截器
+
+### 1、使用案例
+
+**自定义Mybatis拦截器用于拦截查询操作 加密/解密查询参数和查询结果**
+
+以加密/解密用户手机号为例
+
+Gitee：https://gitee.com/yg-bing/sb_template.git
+
+1. 定义加密/解密注解
+
+   **添加该注解的字段在查询过程中会被自动加密解密**
+
+   ```java
+   @Retention(RetentionPolicy.RUNTIME)
+   @Documented
+   @Target(ElementType.FIELD)
+   public @interface FieldEncry {
+   }
+   ```
+
+2. 定义Mybatis拦截器
+
+   ```java
+   /**
+    * Mybatis 字段加密拦截器
+    */
+   @Slf4j
+   @Component
+   @Intercepts({
+           @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
+           @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class})
+   })
+   public class FieldEncryInterceptor implements Interceptor {
+       @Override
+       public Object intercept(Invocation invocation) throws Throwable {
+           return "query".equals(invocation.getMethod().getName()) ? queryHandler(invocation) : invocation.proceed();
+       }
+   
+       private Object queryHandler(Invocation invocation) throws InvocationTargetException, IllegalAccessException {
+           Object[] args = invocation.getArgs();
+           MappedStatement statement = (MappedStatement) args[0];
+           Object param = args[1];
+           log.info("MappedStatement-ID:{}", statement.getId());
+           log.info("MappedStatement-Param:{}", JSONUtil.toJsonStr(param));
+           // 查询查询参数（目前仅处理Map和Object的查询结果）
+           processParam(param);
+           // 调用查询
+           Object result = invocation.proceed();
+           // 处理查询结果（目前仅处理List和Object的查询结果）
+           processResult(result);
+           return result;
+       }
+   
+       /**
+        * 处理查询结果
+        *
+        * @param result 查询结果
+        */
+       private void processResult(Object result) {
+           if (result instanceof Collection<?>) {
+               ((Collection<?>) result).iterator().forEachRemaining(objectEncryOrDecryProcedure(CryptoType.DECRYPT));
+           } else {
+               objectEncryOrDecryProcedure(CryptoType.DECRYPT).accept(result);
+           }
+       }
+   
+       /**
+        * 处理查询参数
+        *
+        * @param param 查询参数
+        */
+       private void processParam(Object param) {
+           if (param instanceof Map<?, ?> tempParam) {
+               for (Object object : tempParam.keySet()) {
+                   objectEncryOrDecryProcedure(CryptoType.ENCRYPT).accept(tempParam.get(object));
+               }
+           } else {
+               objectEncryOrDecryProcedure(CryptoType.ENCRYPT).accept(param);
+           }
+       }
+   
+       /**
+        * 机密逻辑
+        *
+        * @param cryptoType 加密/解密类型
+        */
+       private Consumer<Object> objectEncryOrDecryProcedure(CryptoType cryptoType) {
+           return o -> {
+               for (Field declaredField : ClassUtil.getAllDeclaredField(o.getClass())) {
+                   if (AnnotationUtil.hasAnnotation(declaredField, FieldEncry.class)) {
+                       try {
+                           declaredField.setAccessible(true);
+                           Object v = declaredField.get(o);
+                           if (v instanceof String) {
+                               // 仅支持对String成员进行加密/解密
+                               switch (cryptoType) {
+                                   case DECRYPT -> declaredField.set(o, CryptoUtil.sm4Decrypt((String) v, ""));
+                                   case ENCRYPT -> declaredField.set(o, CryptoUtil.sm4Encrypt((String) v, ""));
+                               }
+                           }
+                       } catch (IllegalAccessException e) {
+                           log.info("SQL拦截加密异常", e);
+                       }
+                   }
+               }
+           };
+       }
+   }
+   ```
+
+3. 测试结果
+
+   ```java
+   @SpringBootTest
+   @Slf4j
+   class SbTemplateApplicationTests {
+       @Resource
+       private SysUserMapper sysUserMapper;
+   
+       @Test
+       void contextLoads() {
+           SysUserEntity sysUserEntity = new SysUserEntity();
+           sysUserEntity.setPhone("15942004829");
+           SysUserEntity sysUserEntity1 = sysUserMapper.selectByUserName(sysUserEntity);
+           log.info("byId: {}", JSONUtil.toJsonStr(sysUserEntity1));
+       }
+   
+   }
+   ```
+
+
+
+### 2、案例解析
+
+- 实现`Interceptor`接口
+
+  <font color=pink>实现`Interceptor`接口接口，核心方法`intercept()`用于定义拦截后的逻辑。</font>
+
+  
+
+  **方法参数 Invocation的核心方法**
+
+  `invocation.proceed()`代表继续执行相应的方法比方说`query`或者`update`，`invocation.proceed()`的返回值就是查询或更新的结果。
+
+  
+
+  **方法参数 Invocation的核心参数**
+
+  - `target`代表被拦截接口的实例对象，比方说拦截`Executor`接口，那么此时`Target`就代表`Executor`接口的对象。
+
+  - `Method`代表被拦截的接口中的方法，通过`method.getName()`可以获取方法名，比方说`query`
+
+  - `args`代表拦截方法上的参数。
+
+    以`Executor`中的`<E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException;`方法为例。
+
+    那么此时`args`数组的大小为4，第一个参数就是`ms`，第二个为`parameter`......
+
+    1. `MappedStatement ms`：代表SQL的映射语句，通过`MappedStatement.getId()`可以获取SQL的唯一ID。比方说：
+
+       | ![image-20241010165703602](./assets/image-20241010165703602.png) |
+       | ------------------------------------------------------------ |
+       | ![image-20241010165720741](./assets/image-20241010165720741.png) |
+
+    2. `Object parameter`：代表查询或更新方法的参数，比方说：
+
+       | ![image-20241010165842665](./assets/image-20241010165842665.png) |
+       | ------------------------------------------------------------ |
+       | ![image-20241010165855960](./assets/image-20241010165855960.png) |
+       | ![image-20241010165918691](./assets/image-20241010165918691.png) |
+
+- `@Component`
+
+  自定义的拦截器需要注册到容器中才会生效。
+
+- `@Intercepts`和`@Signature`
+
+  `@Intercepts`：用于声明该类为 MyBatis 拦截器，其包含多个 `@Signature`。
+
+  `@Signature`：指定要拦截的接口、接口中的方法以及被拦截方法的参数。
+
+  - `type`：目标接口
+
+    1. **Executor**：执行 SQL语句、管理事务和缓存。
+    2. **StatementHandler**：处理 SQL 语句的预编译和参数设置。
+    3. **ParameterHandler**：处理 SQL 语句中的参数。
+    4. **ResultSetHandler**：处理查询结果集的映射。
+
+  - `method`：目标方法名
+
+    | 下图展示了`Executor`接口中可以被拦截的所有方法的方法名       |
+    | ------------------------------------------------------------ |
+    | ![image-20241010164204740](./assets/image-20241010164204740.png) |
+
+  - `args`：目标方法的参数类型，即被拦截方法上所有参数的 Class 对象，声明的参数的值会被按顺序存储到 Invocation 中的 args 数组中存储。
+
+  
+
+  以代码中`@Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class})`为例进行说明，代表`FieldEncryInterceptor`拦截器会拦截`Executor`中的 query 方法，参数列表为`query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler)`。
+
+
+
+## 七、Mybatis 常见问题
 
 ### 1、if标签test中的等号问题
 

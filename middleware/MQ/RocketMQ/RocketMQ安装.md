@@ -94,8 +94,8 @@ tail -f /home/rocketmq/logs/nameserver.log
 ```shell
 # 进入rocketmq的根目录
 cd /home/rocketmq/rocketmq-all-4.9.4-bin-release
-# 启动broker连接NameServer:localhost:9876 并将日志输出到/home/rocketmq/logs/broker.log下
-nohup sh bin/mqbroker -n localhost:9876 > /home/rocketmq/logs/broker.log 2>&1 &
+# 使用./conf/broker.conf的配置文件，启动broker连接NameServer:localhost:9876 并将日志输出到/home/rocketmq/logs/broker.log下
+nohup sh bin/mqbroker -n localhost:9876 -c ./conf/broker.conf > /home/rocketmq/logs/broker.log 2>&1 &
 
 # 查看启动日志
 tail -f /home/rocketmq/logs/broker.log
@@ -110,7 +110,9 @@ tail -f /home/rocketmq/logs/broker.log
 
 ### 4、消息收发测试
 
+见 **RocketMQ笔记.md** 五.1
 
+[收发消息测试]: ./RocketMQ笔记.md#1、基本使用
 
 
 
@@ -156,7 +158,12 @@ tail -f /home/rocketmq/logs/broker.log
 
 - 下载
 
-  **github**地址：https://github.com/apache/rocketmq-dashboard
+  `RcoketMq5.X`：[Release rocketmq-dashboard-2.0.0 · apache/rocketmq-dashboard (github.com)](https://github.com/apache/rocketmq-dashboard/releases/tag/rocketmq-dashboard-2.0.0)
+
+  `RcoketMq4.X`：[Release rocketmq-dashboard-1.0.0 · apache/rocketmq-dashboard (github.com)](https://github.com/apache/rocketmq-dashboard/releases/tag/rocketmq-dashboard-1.0.0)
+
+  | ![image-20241013143707666](./assets/image-20241013143707666.png) |
+  | ------------------------------------------------------------ |
 
   
 
@@ -199,19 +206,22 @@ tail -f /home/rocketmq/logs/broker.log
 
 - 启动Jar包
 
+  <font color=red>注意：`DashBoard 1.0.0` 只能使用`JDK8`启动，而`DashBoard 2.0.0`需使用`JDK8`及其以上的版本启动。</font>
+  
   ```shell
   # 进入Jar包位置
   cd /home/rocketmq/dashboard
   
   # 启动Jar包:以关闭会话不关闭程序的方式在后台启动当前目录下的rocketmq-dashboard-2.0.1-SNAPSHOT.jar,将日志输出到/home/rocketmq/logs/dashboard.log包括错误日志,
   nohup java -jar rocketmq-dashboard-2.0.1-SNAPSHOT.jar > /home/rocketmq/logs/dashboard.log 2>&1 &
+  nohup java -jar rocketmq-dashboard-1.0.0.jar > /home/rocketmq/logs/dashboard.log 2>&1 &
   ```
-
+  
   ```shell
   # 查询启动日志
   tail -f /home/rocketmq/logs/dashboard.log
   ```
-
+  
   | ![image-20240928115325953](./assets/image-20240928115325953.png) |
   | ------------------------------------------------------------ |
 

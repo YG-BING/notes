@@ -1493,6 +1493,7 @@ public class T1 {
 		}
 	=> 结果是即便提前return终止方法，但是finally中的内容仍会被执行
 	c、finally中不能使用return，如果使用那么方法正常的return将会被覆盖。
+	d、finally被必定执行的前提是与finally组合使用的try中的内容被执行。如果try中的代码没有被执行那么finally也不会被执行。
 
 （4）try-catch-finally 格式问题
 	a、格式1：
@@ -4309,9 +4310,9 @@ Test2 test2 = constructor.newInstance();
 ```java
 Class<Test2> clazz = Test2.class;
 
-//a、获取类中所有的公共成员变量
+//a、获取类中所有公共字段(public)，包括继承的
         clazz.getFields();
-//b、获取类中所有的成员变量
+//b、获取类中自身声明的所有字段(无视权限修饰符)，不包括继承的
         clazz.getDeclaredFields();
 //c、获取类中指定名称的公共的成员变量
         clazz.getField(成员变量名);
@@ -4348,7 +4349,7 @@ name.set(test2,"123");
 	Field对象.get(获取的对象);
 （3）取消权限检查
 	Field对象.setAccessible(true);
-	注意：对于Field的使用来说，公共成员变量可以直接设置或者获取值，但是对于私有的来说必须要先取消访问权限检查
+	注意：对于Field的使用来说，公共成员变量可以直接设置或者获取值，但是对于私有的来说必须要先取消访问权限检查才能进行获取或设置值。
 ```
 
 #### （4）成员方法对象
@@ -4567,6 +4568,7 @@ c、@Retention
 d、@Inherited 
 	作用：标注注解可以被继承。
 		比方说现在存在一个注解a以及两个类A和B，其中A继承B。而此时如果把注解a添加到了B上，那么A上即便不手动添加a注解，也会有a注解，此时A类上的a注解就是继承自B类
+	注意：@Inherited 只对类（Class）的继承有效，对方法、字段等其他元素的继承不起作用。
 ```
 
 

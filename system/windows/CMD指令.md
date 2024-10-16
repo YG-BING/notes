@@ -133,7 +133,11 @@ taskkill /pid "PID号" /f
 ```
 
 <hr>
+### 14、获取MAC地址
 
+```cmd
+getmac /v
+```
 
 
 
