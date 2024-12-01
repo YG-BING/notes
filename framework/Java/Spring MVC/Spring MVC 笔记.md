@@ -844,7 +844,7 @@ public class GlobeExceptionProcessor {
 #### （1）过滤器和拦截器的区别
 
 - 过滤器(Filter)是JavaWeb中的功能，而拦截器(Interceptor)则是SpringMVC中的功能。
-- 一次请求的流程：请求进入Servlet，Servlet找对应的handler，然后执行handler，最终返回结果。过滤器是在请求进入Servlet前进行拦截，过滤器是请求进入handler前进行拦截。
+- 一次请求的流程：请求进入Servlet，Servlet找对应的handler，然后执行handler，最终返回结果。过滤器是在请求进入Servlet前进行拦截，拦截器是请求进入handler前进行拦截。
 
 #### （2）拦截器使用
 
@@ -1012,7 +1012,7 @@ public class GlobeExceptionProcessor {
    - `@CrossOrigin`意为所有站点均可访问，可以通过value属性指定某几个站点访问
    - 只能针对某个controller开启跨域请求，不能实现全局跨域请求
 
-2. 配置类
+2. `MVC`配置类
 
    <font color=pink>可以实现全局跨域请求</font>
 
@@ -1035,6 +1035,32 @@ public class GlobeExceptionProcessor {
        }
    }
    ```
+
+3. 过滤器
+
+   ```java
+   @Component
+   public class CorsFilter extends OncePerRequestFilter {
+   
+       @Override
+       protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+               throws ServletException, IOException {
+           response.setHeader("Access-Control-Allow-Origin", "*");
+           response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+           response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+           response.setHeader("Access-Control-Allow-Credentials", "true");
+   
+           if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+               response.setStatus(HttpServletResponse.SC_OK);
+           } else {
+               filterChain.doFilter(request, response);
+           }
+       }
+   }
+   
+   ```
+
+4. `Nignx`配置
 
 
 

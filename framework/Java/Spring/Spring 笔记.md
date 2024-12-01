@@ -1636,6 +1636,33 @@ public class pc{
 
 
 
+### 9、`@EnableAspectJAutoProxy`
+
+`@EnableAspectJAutoProxy`注解的主要作用开启`Aop`。
+
+其中的`exposeProxy`属性默认为false即不暴露代理对象，为true即暴露代理对象。
+
+主要应用场景是同类中方法间的调用。Spring中比如事务`@Transactional`或者异步任务`@Asyn`等都是依赖于Spring的Aop的代理对象实现的，同类中的调用本质上就是`this`调用，而`this`不属于容器中的代理对象因此使用`this`的调用会导致事务或者异步失效。
+
+当`exposeProxy = true`时，那么便可以通过`AopContext.currentProxy();`获取到`this`对应的代理对象，使用`AopContext.currentProxy()`获取的代理对象的调用就不会使事务或者异步等失效。
+
+```java
+/**
+ * Aop工具类
+ */
+public class AopUtil {
+    /**
+     * 获取当前this对象的代理对象
+     */
+    @SuppressWarnings(value = {"unchecked"})
+    public static <T> T getThisProxyObject(T t) {
+        return (T) AopContext.currentProxy();
+    }
+}
+```
+
+
+
 ## 四、SpringTest
 
 1. 依赖
@@ -1878,7 +1905,11 @@ public class pc{
 
 ### 3、@Transactional注解失效的场景
 
-1. `@Transactional`注解添加到非public方法上。因为spring并不会读取非public方法的`@Transactional`注解的属性
+1. `@Transactional`注解添加到private方法上。
+
+   因为声明式事务是通过AOP实现的，也就是说被代理类的方法上之所以有事务是因为代理类调用被代理类的方法的时候在方法调用前后开启和提交事务。而如果被代理类的事务方法是private的话，那么在代理类中是无法调用的，private方法只能在被代理类内部使用，因此Spring不会对private方法添加事务。
+
+   <font color=red>总结：要想使事务生效那么必须得用代理类对象调用，而代理类中无法调用被代理类中的private方法，因此事务不会生效。</font>
 
 2. `@Tranactional`注解默认情况下只会回滚运行时异常(RuntimeException)和错误(Error)，对于例如IoException等非运行时异常则不会回滚。可以通过设置所有异常都回滚来解决`@Transactional(rollBackFor = Exception.class)`。
 
