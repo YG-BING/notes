@@ -1401,9 +1401,11 @@ public static String uncapitalizeAsProperty(String str) {
   
   
   
+  <font color=red>自动配置的总结：自动配置的本质上就是框架的开发者为了简化用户的使用，在项目启动的时候自动的创建了相关的配置对象并将其注入到容器中。比方说一些数据库框架，如果没有自动配置的话，那么想使用这个框架就需要手动的创建一个数据源对象并放入容器中，而如果使用了SpringBoot的话，那么就会在项目启动的时候自动的为你在数据库中放一个数据源对象。自动配置实现的关键是`@EnableAutoConfiguration`上的`@Import`注解，这个注解的作用就是在项目启动的时候找到一个存在于`META-INF`文件夹下的`imports`为后缀的文件，文件的名字视SpringBoot的版本不同会有所变化。这个`imports`文件中存放一系列的自动配置类，它们的共同点就是都是以`AutoConfiguration`为结尾的自动配置类，并且它们这些类的内容也都是大同小异，主要就是通过`@Bean`和`@Conditional`注解有选择的向容器中放入一系列的Bean对象，从而完成自动配置。当然不是所有的所依赖的Jar包中均含有`imports`这个文件，但是`Spring.boot.autoConfiguration`这个依赖中必定含有一个，这个是SpringBoot官方提供的一个自动配置的依赖。如果第三方的框架作者想简化用户的开发，也可以在在`META-INF`文件夹下添加该文件，以达到自动配置简化开发的目的。</font>
+  
   **<u>补充</u>**：
   
-  `SpringBoot`中存在一些以`@EnableXXX`开头的注解，比方说`@EnableAsync`,`@EnableScheduling`等。这些注解的作用就是用来手动的开启某些特定的功能，功能的开启与否取决于是否向容器中注入了与这些功能相关的组件。
+  `SpringBoot`中存在一些以`@EnableXXX`开头的注解，比方说`@111EnableAsync`,`@EnableScheduling`等。这些注解的作用就是用来手动的开启某些特定的功能，功能的开启与否取决于是否向容器中注入了与这些功能相关的组件。
   
   比方说`@EnableAsync`注解开启了异步支持
   

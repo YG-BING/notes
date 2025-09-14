@@ -358,6 +358,81 @@ ul > li{} ： ul标签下直接子标签中的所有li标签
 	用于input输入框，将获得焦点的标签选择出来
 ```
 
+##### （6）:first-child
+
+`:first-child`：获取第一个元素
+
+```html
+<div>
+
+    <ul>
+        <li>1</li>
+        <li>2</li>
+        <li>3</li>
+    </ul>
+
+</div>
+```
+
+```css
+// 此时1为红，2和3均为黑
+li:first-child {
+        color: red;
+}
+```
+
+##### （7）:last-child
+
+`:last-child`：获取最后一个元素
+
+```html
+<div>
+
+    <ul>
+        <li>1</li>
+        <li>2</li>
+        <li>3</li>
+    </ul>
+
+</div>
+```
+
+```css
+// 此时3为红，1和2均为黑
+li:last-child {
+        color: red;
+}
+```
+
+##### （8）:only-child
+
+`:only-child`：获取只有一个结果的节点。通过选择器选择后最终结果中只有一个元素的才会被选择。
+
+```html
+<!--  第一种 此时ul:only-child可以选出 -->
+<ul>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+</ul>
+
+<!--  第二种 此时ul:only-child不可以选出，因此此时通过ul可以获取两个ul元素 -->
+<ul>
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+</ul>
+
+<ul>
+    <li>1</li>
+    <li>2</li>
+</ul>
+```
+
+##### （9）:nth-of-type(n)
+
+`:nth-of-type(n)`:获取第n个元素。比方说`2n`代表获取偶数元素，`2n+1`代表获取奇数元素
+
 
 
 ## 四、Emmet语法
@@ -575,9 +650,12 @@ text-align: center;
 
 ```
 ###注意：
-（1）text-align不仅仅对于文本有效，对于像button，span等行内标签也是有效的
-（2）比方说div中存在一个button，想让这个button在div中水平居中对齐，应该将text-align: center;加在外层的div上，而不是button上。也就是说text-align: center;的作用是让标签内的文本,行内元素或者行内块元素居中对齐
+（1）text-align只对行内元素、行内块元素（inline、inline-block、inline-table、img 等）有效。也就是说如果div套span那么使用之后span在div中就会水平居中或者其他，但是如果是div套div那么内部的div不受外部的text-align控制。
+（2）外部添加text-align属性之后内部的块级元素或者行内块元素也会继承该属性。比方说div套div内部div中含有文字，那么内部div即便不手动的添加text-align，其中的文字也会居中对齐或其他
+（3）要想是内部的块级元素也想居中对其，可以在内部的块级元素上添加`margin:auto;`
 ```
+
+
 
 ### 3、修饰
 

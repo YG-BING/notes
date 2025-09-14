@@ -758,94 +758,74 @@ DI注入说白了就是给对象的成员变量进行赋值。而普通的Java�
 
 #### （1）Setter注入
 
-spring-config.xml
+<font color=red>使用Setter注入时，依赖并不是强制注入的。</font>
 
-```xml
-<!--
-	通过property标签使用类中成员变量的set方法完成依赖注入
-	（1）name：set方法名（set方法去除set以及首字母小写后的名字）
-	（2）value：依赖注入的值
-	（3）ref：其他Bean的id（引用其他的Bean）
-	注意：如果相关的成员变量没有set方法那么就会报错
--->
-<bean id="user" class="org.yg.practice.entity.User" >
-   <property name="userName" value="admin"></property>
-   <property name="password" value="123456"></property>
-</bean>
-```
-
-Di.java
+比方说如下案例，创建A的对象的时候，并不强制为B注入依赖。
 
 ```java
-public class Di {
-    private Logger logger = LoggerFactory.getLogger(Di.class);
-    @Test
-    public void main(){
-        ApplicationContext ioc = new ClassPathXmlApplicationContext("spring-config.xml");
-        User user = ioc.getBean(User.class);
-        //结果：User(userName=admin, password=123456) => 依赖注入成功
-        logger.info("{}",user);
+@Component
+class A {
+    private B b;
+
+    public void setB(B b) {
+        this.b = b;
     }
 }
 ```
+
+
 
 #### （2）构造器注入
 
-通过`constructor-arg`标签使用类中的有参构造为成员变量赋值
+<font color=red>使用构造器注入（有参构造）时，依赖是强制注入的。</font>
 
-常用属性如下：
-
-- name：成员变量名
-- value：依赖注入的值
-- index：构造方法参数的位置索引（从0开始依次递增）
-- ref：其他Bean的id（引用其他的Bean）
+比方说如下案例，创建A的对象的时候，要强制为B注入依赖，也就是说当A的对象创建完成后依赖注入也完成了，A的对象此时是一个完整的对象。
 
 ```java
-//实体类
-public class User {
-    private String userName;
-    private Integer age;
+@Component
+class A {
+    private final B b;
     
-    public User(){}
-    public User(String userName,Integer age){
-        this.userName = userName;
-        this.age = age;
+    //此时A中只提供了一个有参构造那么就只会进行构造器注入，此时就必须要求容器中存在一个B类型的Bean，在创建A的对象之前将B的对象注入其中完成A的创建
+    //如果使用这种方法时容器中没有B的对象就会报错
+    public A(B b) {
+        this.b = b;
     }
 }
 ```
 
-构造器注入的三种场景：
-
-- 按有参构造方法参数的顺序注入
-
-  ```xml
-  <bean id="user" class="org.yg.practice.entity.User" >
-     <constructor-arg value="admin"></constructor-arg>
-     <constructor-arg value="1234567890"></constructor-arg>
-  </bean>
-  ```
-
-- 按有参构造方法参数的名字注入
-
-  ```xml
-  <bean id="user" class="org.yg.practice.entity.User" >
-     <constructor-arg name="userName" value="admin"></constructor-arg>
-     <constructor-arg name="age" value="1234567890"></constructor-arg>
-  </bean>
-  ```
-
-- 按有参构造方法参数的索引值注入
-
-  ```xml
-  <bean id="user" class="org.yg.practice.entity.User" >
-     <constructor-arg index="0" value="admin"></constructor-arg>
-     <constructor-arg index="1" value="1234567890"></constructor-arg>
-  </bean>
-  ```
+```java
+@Component
+class A {
+    private final B b;
+    
+    //如果提供了有参构造那么就不会有限使用有参构造注入，此时创建的对象中的b为null，此时不强制要求依赖注入
+    public A() {
+    }
+    
+    public A(B b) {
+        this.b = b;
+    }
+}
+```
 
 
 
-#### （3）注解注入
+#### （3）成员变量注入
+
+<font color=red>成员变量注入与Setter注入本质类似。</font>
+
+```java
+@Component
+class A {
+    @Autowired
+    private B b;
+}
+```
+
+
+
+#### （4）注解注入
 
 *<u>使用注解注入的前提是被注入的类要被spring容器管理和维护。</u>*
 
@@ -1059,6 +1039,37 @@ public class User {
    ```
    
    
+
+### 3、循环依赖问题
+
+循环依赖：比方说A依赖B，B又依赖A。A创建的时候发现需要B的对象，然后就要去创建B的对象，此时A仍处于创建过程中。B创建对象的时候发现还需要A的对象，但是此时A还处于创建中，那么这样就会导致创建过程进入死循环。
+
+```java
+//循环依赖问题
+
+@Data
+@Component
+public class A {
+    @Autowired
+    private B b;
+}
+
+
+@Data
+@Component
+public class B {
+    @Autowired
+    private A a;
+}
+```
+
+循环依赖通过三级缓存解决。
+
+其中一级缓存中存储完全创建的对象，二级缓存中存放未进行依赖注入的对象，三级缓存中存放相应类的工厂对象用于动态的创建类的原始对象或者代理对象。
+
+以A依赖B，B依赖A为例。当创建A对象时，首先创建A的工厂对象存入三级缓存，然后进行依赖注入，发现需要B对象，那么就要去创建B的对象，同样的也是先创建B的工厂对象存入三级缓存中，然后需要为B的对象进行依赖注入，此时可以在三级缓存中找到A的工厂对象，可以获取到一个未进行依赖注入的A的对象，并将这个对象放入二级缓存中，随后这个A的对象会被注入到B中，那么此时B的对象就被完全创建完成放入一级缓存中，然后A的对象会从一级缓存中获取到B的完整对象，最终也完成依赖注入。
+
+
 
 ## 三、AOP
 
