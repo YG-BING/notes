@@ -276,3 +276,88 @@ echo '123'>a.txt # 将'123'写入当前目录下的a.txt中
 echo '123'>>a.txt # 将'123'写入当前目录下的a.txt中
 ```
 
+
+
+## 17、adduser
+
+```shell
+adduser 新增用户名
+
+# 添加名为yang的用户
+adduser yang
+```
+
+
+
+## 18、passwd
+
+```shell
+passwd 用户名
+
+# 更改名为yang的用户的密码
+passwd yang
+```
+
+
+
+## 19、userdel 
+
+```shell
+userdel -r 用户名
+
+# 彻底删除名为yang的用户
+userdel -r yang
+```
+
+
+
+## 20、tar
+
+- 解压 `.tar`
+
+  ```shell
+  tar -xvf file.tar
+  ```
+
+- 解压 `.tar.gz` / `.tgz`
+
+  ```shell
+  tar -xzvf file.tar.gz
+  ```
+
+- 解压 `.tar.bz2`
+
+  ```shell
+  tar -xjvf file.tar.bz2
+  ```
+
+- 解压 `.tar.xz`
+
+  ```shell
+  tar -xJvf file.tar.xz
+  ```
+
+- 解压到指定目录下
+
+  ```
+  tar -xvf file.tar -C 指定目录
+  ```
+
+> 参数说明：
+>
+> - `x` 解压（extract）
+> - `v` 显示过程（verbose，可省略）
+> - `f` 指定文件（file）
+> - `z` 处理 `.gz`
+> - `j` 处理 `.bz2`
+> - `J` 处理 `.xz`
+
+
+
+## 21、source
+
+```shell
+# 加载环境变量
+source ~/.bash_profile # 刷新用户目录下的.bash_profile文件
+```
+
